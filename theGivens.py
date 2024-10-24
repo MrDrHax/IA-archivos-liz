@@ -45,8 +45,42 @@ def calulate_itter(Q_0: np.ndarray, F_0: np.ndarray, S_0: np.ndarray):
 
     return U[:m, :m]
 
-print(calulate_itter(
-    F_0=np.array([[1,1], [0,1]]),
-    S_0=np.array([[1,0],[0,1]]),
-    Q_0=np.array([[0,0],[0,2]]),
-))
+if __name__ == "__main__":
+    print(calulate_itter(
+        F_0=np.array([[1,1], [0,1]]),
+        S_0=np.array([[1,0],[0,1]]),
+        Q_0=np.array([[0,0],[0,2]]),
+    ))
+
+
+def givens(F, Q, S):
+    m = S.shape[0]
+    U = np.concatenate([np.dot(F.T, S.T), np.sqrt(Q.T)], axis=0)
+
+    for j in range(m):
+        for i in range(2 * m - 1, j, -1):
+            B = np.eye(2 * m)
+            a = U[i-1, j]
+            b = U[i, j]
+
+            if b == 0:
+                c = 1
+                s = 0
+            elif abs(b) > abs(a):
+                r = a / b
+                s = 1 / np.sqrt(1 + r**2)
+                c = s * r
+            else:
+                r = b / a
+                c = 1 / np.sqrt(1 + r**2)
+                s = c * r
+
+            B[i-1, i-1] = c
+            B[i-1, i] = -s
+            B[i, i-1] = s
+            B[i, i] = c
+
+            U = np.dot(B.T, U)
+
+    S = U[:m, :m]
+    return S

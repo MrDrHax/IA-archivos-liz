@@ -1,19 +1,11 @@
 import pandas as pd
 import numpy as np
 
-sensor_tags = ["AF3", "F7", "F3", "FC5", "T7", "P7", "O1", "O2", "P8", "T8", "FC6", "F4", "F8", "AF4"]
-counter_tag = "COUNTER"
+sensor_tags_default = ["AF3", "F7", "F3", "FC5", "T7", "P7", "O1", "O2", "P8", "T8", "FC6", "F4", "F8", "AF4"]
+counter_tag_default = "COUNTER"
 
-start = 0
-sample_size = 10
 
-file_name = "data/test.csv"
-
-df = pd.read_csv(file_name, header= 0)
-
-print("preserving tags: ", sensor_tags, f"({len(sensor_tags)})")
-
-def getRange(df: pd.DataFrame, counter_tag: str, sensor_tags: list[str], start: int, end: int): 
+def getRange(df: pd.DataFrame, counter_tag: str, sensor_tags: list[str], start: int, end: int):
     total = end-start
 
     mask = (df[counter_tag] >= start) & (df[counter_tag] < end)
@@ -22,36 +14,48 @@ def getRange(df: pd.DataFrame, counter_tag: str, sensor_tags: list[str], start: 
 
     if len(toReturn) != total:
         return pd.DataFrame()
-    
+
     return toReturn
 
-seconds = []
-second = 0
-skipped = []
 
-print("Starting to process data...")
+def loadFromFile(file_name="data/test.csv", start=0,
+                 sample_size=10, sensor_tags=sensor_tags_default, counter_tag = counter_tag_default):
+    
+    df = pd.read_csv(file_name, header= 0)
 
-for i in range(0, len(df) + sample_size + 1, sample_size):
-    second += 1
-    currentStart = i
-    currentEnd = i + sample_size # exclusive
+    print("preserving tags: ", sensor_tags, f"({len(sensor_tags)})")
 
-    result = getRange(df, counter_tag, sensor_tags, currentStart, currentEnd)
+    
 
-    if not result.empty:
-        seconds.append(result.to_numpy(dtype=np.float32).T)
+    seconds = []
+    second = 0
+    skipped = []
 
-    else:
-        print(f"Incomplete second {second}. Skipping...")
-        skipped.append(str(second))
+    print("Starting to process data...")
 
-print("processing completed, converting to numpy...")
+    for i in range(start, len(df) + sample_size + 1, sample_size):
+        second += 1
+        currentStart = i
+        currentEnd = i + sample_size # exclusive
 
-completed = np.array(seconds, dtype=np.float32)
+        result = getRange(df, counter_tag, sensor_tags, currentStart, currentEnd)
 
-print("Array is ready! Final shape:")
-print(completed.shape)
+        if not result.empty:
+            seconds.append(result.to_numpy(dtype=np.float32).T)
 
-print(f"For a total of {len(seconds)} chunks (probably seconds).")
+        else:
+            print(f"Incomplete second {second}. Skipping...")
+            skipped.append(str(second))
 
-print(f"Skipped {len(skipped)}: not considered: {','.join(skipped)}")
+    print("processing completed, converting to numpy...")
+
+    completed = np.array(seconds, dtype=np.float32)
+
+    print("Array is ready! Final shape:")
+    print(completed.shape)
+
+    print(f"For a total of {len(seconds)} chunks (probably seconds).")
+
+    print(f"Skipped {len(skipped)}: not considered: {','.join(skipped)}")
+
+    return completed
